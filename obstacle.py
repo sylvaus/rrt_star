@@ -13,7 +13,7 @@ class Obstacle:
         return (((position[0] - self._center[0]) ** 2 + (position[1] - self._center[1]) ** 2)
                 < ((self._radius ** 2) * safety))
 
-    def does_line_intersect(self, start_position, end_position, safety=1):
+    def does_line_intersect(self, start_position, end_position, safety=1.5):
         radius = self._radius * safety
         x_c, y_c = self._center
         x_l0, y_l0 = start_position

@@ -15,7 +15,7 @@ class RRStarAlgo:
         self._tree = Node(init_position)
         self._nodes = [self._tree]
         self._obstacles = [Obstacle(30, [randint(50, CANVAS_SIZE[0] - 50),
-                                         randint(50, CANVAS_SIZE[1] - 50)]) for _ in range(20)]
+                                         randint(50, CANVAS_SIZE[1] - 50)]) for _ in range(15)]
         self._arrival = None
         self._ellipse = None
 
@@ -27,32 +27,19 @@ class RRStarAlgo:
                 return
 
         best_node, near_nodes = self.chooseParent(new_node)
+        self.insert_node(best_node, new_node)
 
-        if best_node:
-            new_node.set_cost(best_node.get_cost() + Node.nodes_distance(best_node, new_node))
-            best_node.add_node(new_node)
-            self._nodes.append(new_node)
-
-            near_nodes.remove(best_node)
-        else:
+        if not best_node:
             return
-
-        if near_nodes:
-            new_code_cost = new_node.get_cost()
-            for node in near_nodes:
-                if node.get_cost() > (new_code_cost + Node.nodes_distance(node, new_node)):
-                    if self.does_line_intersect(new_node.get_position(), node.get_position()):
-                        continue
-
-                    node.set_cost(new_code_cost + Node.nodes_distance(node, new_node))
-                    node.reconnect(new_node)
+        near_nodes.remove(best_node)
+        self.rewire(near_nodes, new_node)
 
         if self.is_final_node(new_node):
             self.update_arrival_node(new_node)
 
     def chooseParent(self, new_node):
         best_node = None
-        near_nodes = self.find_near(new_node, 100)
+        near_nodes = self.find_near(new_node, 50)
         best_cost = None
 
         for node in near_nodes:
@@ -67,6 +54,29 @@ class RRStarAlgo:
                 best_node = node
 
         return best_node, near_nodes
+
+    def insert_node(self, best_node, new_node):
+        if best_node:
+            new_node.set_cost(best_node.get_cost() + Node.nodes_distance(best_node, new_node))
+            best_node.add_node(new_node)
+            self._nodes.append(new_node)
+        else:
+            nearest_node = self.find_nearest(new_node)
+            if not self.does_line_intersect(nearest_node.get_position(), new_node.get_position()):
+                new_node.set_cost(nearest_node.get_cost() + Node.nodes_distance(nearest_node, new_node))
+                nearest_node.add_node(new_node)
+                self._nodes.append(new_node)
+
+    def rewire(self, near_nodes, new_node):
+        if near_nodes:
+            new_code_cost = new_node.get_cost()
+            for node in near_nodes:
+                if node.get_cost() > (new_code_cost + Node.nodes_distance(node, new_node)):
+                    if self.does_line_intersect(new_node.get_position(), node.get_position()):
+                        continue
+
+                    node.set_cost(new_code_cost + Node.nodes_distance(node, new_node))
+                    node.reconnect(new_node)
 
     def does_line_intersect(self, start_position, end_position):
         for obstacle in self._obstacles:
@@ -133,7 +143,7 @@ class RRTStarUI:
 
         self._loop_counter = 0
 
-        self.algo = RRStarAlgo([620, 440], [10, 10])
+        self.algo = RRStarAlgo([620, 440], [30, 30])
 
         self.cyclic_call()
 

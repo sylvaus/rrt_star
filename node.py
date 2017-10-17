@@ -1,5 +1,5 @@
 from tkinter import Canvas
-from math import sqrt
+from utils import distance
 
 POINT_RADIUS = 1
 
@@ -55,7 +55,4 @@ class Node:
 
     @staticmethod
     def nodes_distance(first_node, second_node):
-        first_x, first_y = first_node.get_position()
-        second_x, second_y = second_node.get_position()
-
-        return sqrt((first_x - second_x) ** 2 + (first_y - second_y) ** 2)
+        return distance(first_node.get_position(), second_node.get_position())
