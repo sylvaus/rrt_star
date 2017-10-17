@@ -1,113 +1,12 @@
 from tkinter import Tk, Frame, Button, Canvas, LEFT, ALL
 from random import randint
-from math import sqrt
-from time import time
+from node import Node
+from obstacle import Obstacle
 
 CANVAS_SIZE = [640, 480]
 MAX_LOOP = 500000
-POINT_RADIUS = 1
 ARRIVAL_RADIUS = 20
 
-
-class Node:
-    def __init__(self, position):
-        self._position = position
-        self._cost = 0
-        self._parent = None
-        self._nodes = []
-
-    def get_cost(self):
-        return self._cost
-
-    def set_cost(self, cost):
-        self._cost = cost
-
-    def set_parent(self, node: "Node"):
-        self._parent = node
-
-    def remove_node(self, node: 'Node'):
-        self._nodes.remove(node)
-
-    def reconnect(self, node: 'Node'):
-        self._parent.remove_node(self)
-        self._parent = node
-        self._parent.add_node(self)
-
-    def add_node(self, node: "Node"):
-        node.set_parent(self)
-        self._nodes.append(node)
-
-    def print(self, canvas: Canvas):
-        canvas.create_oval(self._position[0] - POINT_RADIUS, self._position[1] - POINT_RADIUS,
-                           self._position[0] + POINT_RADIUS, self._position[1] + POINT_RADIUS,
-                           fill="green")
-        for node in self._nodes:
-            self.print_line(canvas, self._position, node.get_position())
-            node.print(canvas)
-
-    def print_path_to_root(self, canvas):
-        if self._parent:
-            self.print_line(canvas, self._position, self._parent.get_position(), fill="red", width=2.0)
-            self._parent.print_path_to_root(canvas)
-
-    def get_position(self):
-        return self._position
-
-    @staticmethod
-    def print_line(canvas, first_position, last_position, fill="black", width=1.0):
-        canvas.create_line(first_position[0], first_position[1],
-                           last_position[0], last_position[1],
-                           fill=fill, width=width)
-
-    @staticmethod
-    def nodes_distance(first_node, second_node):
-        first_x, first_y = first_node.get_position()
-        second_x, second_y = second_node.get_position()
-
-        return sqrt((first_x - second_x) ** 2 + (first_y - second_y) ** 2)
-
-
-class Obstacle:
-    def __init__(self, radius, center):
-        self._radius = radius
-        self._center = center
-
-    def is_point_in(self, node: Node, safety=1.0):
-        position = node.get_position()
-        return (((position[0] - self._center[0]) ** 2 + (position[1] - self._center[1]) ** 2)
-                < ((self._radius ** 2) * safety))
-
-    def does_line_intersect(self, start_position, end_position, safety=1):
-        radius = self._radius * safety
-        x_c, y_c = self._center
-        x_l0, y_l0 = start_position
-        x_l1, y_l1 = end_position
-        x_l1 = x_l1 - x_l0
-        y_l1 = y_l1 - y_l0
-
-        c = (x_c ** 2) + (y_c ** 2) + (x_l0 ** 2) + (y_l0 ** 2) - (2 * ((x_c * x_l0) + (y_c * y_l0))) - (radius ** 2)
-        b = 2 * ((x_l0 * x_l1) + (y_l0 * y_l1) - (x_l1 * x_c) - (y_l1 * y_c))
-        a = (y_l1 ** 2) + (x_l1 ** 2)
-
-        det = (b ** 2) - (4 * a * c)
-
-        if det >= 0:
-            if a != 0:
-                square_det = sqrt(det)
-                if 0 <= (-b + square_det) / (2 * a) <= 1:
-                    return True
-                if 0 <= (-b - square_det) / (2 * a) <= 1:
-                    return True
-                return False
-            else:
-                return True
-        else:
-            return False
-
-    def print(self, canvas):
-        canvas.create_oval(self._center[0] - self._radius, self._center[1] - self._radius,
-                           self._center[0] + self._radius, self._center[1] + self._radius,
-                           fill="red")
 
 class RRStarAlgo:
     def __init__(self, init_position, final_position):
@@ -137,7 +36,6 @@ class RRStarAlgo:
             near_nodes.remove(best_node)
         else:
             return
-
 
         if near_nodes:
             new_code_cost = new_node.get_cost()
@@ -212,7 +110,6 @@ class RRStarAlgo:
         else:
             self._arrival = node
 
-
     @staticmethod
     def create_random_node():
         return Node([randint(0, CANVAS_SIZE[0]), randint(0, CANVAS_SIZE[1])])
@@ -257,7 +154,6 @@ class RRTStarUI:
             if self.algo._arrival:
                 print(self.algo._arrival.get_cost())
             self.master.after(1, self.cyclic_call)
-
 
 
 root = Tk()
