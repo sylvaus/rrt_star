@@ -2,6 +2,7 @@ from tkinter import Tk, Frame, Button, Canvas, LEFT, ALL
 from random import randint
 from node import Node
 from obstacle import Obstacle
+from ellipse import Ellipse
 
 CANVAS_SIZE = [640, 480]
 MAX_LOOP = 500000
@@ -14,10 +15,11 @@ class RRStarAlgo:
         self._final_position = final_position
         self._tree = Node(init_position)
         self._nodes = [self._tree]
-        self._obstacles = [Obstacle(30, [randint(50, CANVAS_SIZE[0] - 50),
-                                         randint(50, CANVAS_SIZE[1] - 50)]) for _ in range(15)]
+        self._obstacles = [Obstacle(randint(10, 30), [randint(50, CANVAS_SIZE[0] - 50),
+                                                      randint(50, CANVAS_SIZE[1] - 50)]) for _ in range(20)]
         self._arrival = None
         self._ellipse = None
+        self._counter = 0
 
     def step(self):
         new_node = self.create_random_node()
@@ -26,7 +28,11 @@ class RRStarAlgo:
             if obstacle.is_point_in(new_node, 2):
                 return
 
-        best_node, near_nodes = self.chooseParent(new_node)
+        if self._ellipse:
+            if not self._ellipse.is_point_in(new_node.get_position()):
+                return
+
+        best_node, near_nodes = self.choose_parent(new_node)
         self.insert_node(best_node, new_node)
 
         if not best_node:
@@ -36,8 +42,9 @@ class RRStarAlgo:
 
         if self.is_final_node(new_node):
             self.update_arrival_node(new_node)
+            self._ellipse = Ellipse(self._init_position, self._final_position, new_node.get_cost()/2)
 
-    def chooseParent(self, new_node):
+    def choose_parent(self, new_node):
         best_node = None
         near_nodes = self.find_near(new_node, 50)
         best_cost = None
