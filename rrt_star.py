@@ -1,4 +1,4 @@
-from tkinter import Tk, Frame, Button, Canvas, LEFT, ALL
+from tkinter import Tk, Frame, Button, Canvas, Label, StringVar, LEFT, ALL
 from random import randint
 from node import Node
 from obstacle import Obstacle
@@ -15,8 +15,9 @@ class RRStarAlgo:
         self._final_position = final_position
         self._tree = Node(init_position)
         self._nodes = [self._tree]
+        self._outside_nodes = []
         self._obstacles = [Obstacle(randint(10, 30), [randint(50, CANVAS_SIZE[0] - 50),
-                                                      randint(50, CANVAS_SIZE[1] - 50)]) for _ in range(20)]
+                                                      randint(50, CANVAS_SIZE[1] - 50)]) for _ in range(40)]
         self._arrival = None
         self._ellipse = None
         self._counter = 0
@@ -42,7 +43,13 @@ class RRStarAlgo:
 
         if self.is_final_node(new_node):
             self.update_arrival_node(new_node)
-            self._ellipse = Ellipse(self._init_position, self._final_position, new_node.get_cost()/2)
+
+        if self._arrival:
+            if self._ellipse:
+                if self._arrival.get_cost() < self._ellipse_cost_limit * 0.9:
+                    self.update_ellipse()
+            else:
+                self.update_ellipse()
 
     def choose_parent(self, new_node):
         best_node = None
@@ -127,15 +134,27 @@ class RRStarAlgo:
         else:
             self._arrival = node
 
-    @staticmethod
-    def create_random_node():
-        return Node([randint(0, CANVAS_SIZE[0]), randint(0, CANVAS_SIZE[1])])
+
+    def create_random_node(self):
+        if self._ellipse:
+            return Node(self._ellipse.random_point_in())
+        else:
+            return Node([randint(0, CANVAS_SIZE[0]), randint(0, CANVAS_SIZE[1])])
+
+    def update_ellipse(self):
+        self._ellipse = Ellipse(self._init_position, self._final_position, self._arrival.get_cost() / 2)
+        self._ellipse_cost_limit = self._arrival.get_cost()
+
+        self._outside_nodes = self._outside_nodes + list(filter(lambda node: False == self._ellipse.is_point_in(node.get_position()), self._nodes))
+        for node in self._outside_nodes:
+            node.set_outside_state(True)
+        self._nodes = list(filter(lambda node: self._ellipse.is_point_in(node.get_position()), self._nodes))
 
 
 class RRTStarUI:
     def __init__(self, master):
         self.master = master
-        master.title("A simple GUI")
+        master.title("RRT* GUI")
 
         self.canvas = Canvas(master, width=CANVAS_SIZE[0], height=CANVAS_SIZE[1])
         self.canvas.pack()
@@ -148,6 +167,11 @@ class RRTStarUI:
         self.close_button = Button(self.frame, text="Close", command=master.quit)
         self.close_button.pack(side=LEFT)
 
+        self.cost_string = StringVar()
+        self.cost_string.set("Infinity")
+        self.cost_label = Label(self.frame, textvariable=self.cost_string)
+        self.cost_label.pack(side=LEFT)
+
         self._loop_counter = 0
 
         self.algo = RRStarAlgo([620, 440], [30, 30])
@@ -156,7 +180,7 @@ class RRTStarUI:
 
     def cyclic_call(self):
 
-        for _ in range(100):
+        for _ in range(200):
             self.algo.step()
             self._loop_counter += 1
 
@@ -169,10 +193,10 @@ class RRTStarUI:
 
         if self._loop_counter < MAX_LOOP:
             if self.algo._arrival:
-                print(self.algo._arrival.get_cost())
+                self.cost_string.set(str(self.algo._arrival.get_cost()))
             self.master.after(1, self.cyclic_call)
 
-
-root = Tk()
-my_gui = RRTStarUI(root)
-root.mainloop()
+if __name__ == '__main__':
+    root = Tk()
+    my_gui = RRTStarUI(root)
+    root.mainloop()

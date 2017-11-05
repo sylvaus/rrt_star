@@ -9,6 +9,8 @@ class Node:
         self._cost = 0
         self._parent = None
         self._nodes = []
+        self._outside = False
+
 
     def get_cost(self):
         return self._cost
@@ -18,6 +20,9 @@ class Node:
 
     def set_parent(self, node: "Node"):
         self._parent = node
+
+    def set_outside_state(self, state: bool):
+        self._outside = state
 
     def remove_node(self, node: 'Node'):
         self._nodes.remove(node)
@@ -34,7 +39,7 @@ class Node:
     def print(self, canvas: Canvas):
         canvas.create_oval(self._position[0] - POINT_RADIUS, self._position[1] - POINT_RADIUS,
                            self._position[0] + POINT_RADIUS, self._position[1] + POINT_RADIUS,
-                           fill="green")
+                           fill="red" if self._outside else "green")
         for node in self._nodes:
             self.print_line(canvas, self._position, node.get_position())
             node.print(canvas)
