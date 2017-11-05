@@ -17,7 +17,7 @@ class Ellipse:
         self._semi_major_axis2 = semi_major_axis * 2
         self._ellipse_angle = atan2(self._center[0] - first_focus[0], self._center[1] - first_focus[1])
 
-    def is_point_in(self, point: []):
+    def is_point_in(self, point: []) -> []:
         return ((distance(self._first_focus, point)
                  + distance(self._second_focus, point)) <= self._semi_major_axis2)
 

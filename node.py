@@ -40,6 +40,7 @@ class Node:
         canvas.create_oval(self._position[0] - POINT_RADIUS, self._position[1] - POINT_RADIUS,
                            self._position[0] + POINT_RADIUS, self._position[1] + POINT_RADIUS,
                            fill="red" if self._outside else "green")
+
         for node in self._nodes:
             self.print_line(canvas, self._position, node.get_position())
             node.print(canvas)
