@@ -1,5 +1,6 @@
 from tkinter import Tk, Frame, Button, Canvas, Label, StringVar, LEFT, ALL
 from random import randint
+from math import inf
 from node import Node
 from obstacle import Obstacle
 from ellipse import Ellipse
@@ -10,9 +11,10 @@ ARRIVAL_RADIUS = 20
 
 
 class RRStarAlgo:
-    def __init__(self, init_position, final_position):
+    def __init__(self, init_position, final_position, safety_coeff: float=2):
         self._init_position = init_position
         self._final_position = final_position
+        self._safety_coeff = safety_coeff
         self._tree = Node(init_position)
         self._nodes = [self._tree]
         self._outside_nodes = []
@@ -21,25 +23,22 @@ class RRStarAlgo:
         self._arrival = None
         self._ellipse = None
         self._counter = 0
+        self._ellipse_cost_limit = inf
 
     def step(self):
         new_node = self.create_random_node()
-
-        for obstacle in self._obstacles:
-            if obstacle.is_point_in(new_node, 2):
-                return
-
-        if self._ellipse:
-            if not self._ellipse.is_point_in(new_node.get_position()):
-                return
+        if not self.is_valid_node(new_node):
+            return
 
         best_node, near_nodes = self.choose_parent(new_node)
-        self.insert_node(best_node, new_node)
-
         if not best_node:
             return
-        near_nodes.remove(best_node)
-        self.rewire(near_nodes, new_node)
+
+        self.insert_node(best_node, new_node)
+
+        if not near_nodes == []:
+            near_nodes.remove(best_node)
+            self.rewire(near_nodes, new_node)
 
         if self.is_final_node(new_node):
             self.update_arrival_node(new_node)
@@ -67,19 +66,18 @@ class RRStarAlgo:
                 best_cost = cost
                 best_node = node
 
+        if not best_node:
+            nearest_node = self.find_nearest(new_node)
+            if not self.does_line_intersect(nearest_node.get_position(), new_node.get_position()):
+                best_node = nearest_node
+
         return best_node, near_nodes
 
     def insert_node(self, best_node, new_node):
-        if best_node:
-            new_node.set_cost(best_node.get_cost() + Node.nodes_distance(best_node, new_node))
-            best_node.add_node(new_node)
-            self._nodes.append(new_node)
-        else:
-            nearest_node = self.find_nearest(new_node)
-            if not self.does_line_intersect(nearest_node.get_position(), new_node.get_position()):
-                new_node.set_cost(nearest_node.get_cost() + Node.nodes_distance(nearest_node, new_node))
-                nearest_node.add_node(new_node)
-                self._nodes.append(new_node)
+        new_node.set_cost(best_node.get_cost() + Node.nodes_distance(best_node, new_node))
+        best_node.add_node(new_node)
+        self._nodes.append(new_node)
+
 
     def rewire(self, near_nodes, new_node):
         if near_nodes:
@@ -121,6 +119,17 @@ class RRStarAlgo:
 
     def find_near(self, node: Node, radius):
         return list(filter(lambda x: Node.nodes_distance(x, node) < radius, self._nodes))
+
+    def is_valid_node(self, new_node: Node):
+        for obstacle in self._obstacles:
+            if obstacle.is_point_in(new_node, self._safety_coeff):
+                return False
+
+        if self._ellipse:
+            if not self._ellipse.is_point_in(new_node.get_position()):
+                return False
+
+        return True
 
     def is_final_node(self, node: Node):
         position = node.get_position()
